@@ -34,10 +34,12 @@ describe AwsRotateKeys do
   let(:iam_double) { IAMDouble.new }
   let(:credentials_path) { "./spec/tmp/aws/credentials" }
 
-  def rotate_keys
+  def rotate_keys(args = {})
     AwsRotateKeys.call(
-      iam: iam_double,
-      credentials_path: credentials_path
+      {
+        iam: iam_double,
+        credentials_path: credentials_path
+      }.merge(args)
     )
   end
 
@@ -74,5 +76,37 @@ describe AwsRotateKeys do
       backup = backups.first
       expect(backup).to match(/credentials.bkp-\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d/)
     end
+  end
+
+  describe "friendly message inviting the user to remove AWS env variables" do
+    it "displays it when the env variables are set" do
+      stdout = MyIO.new
+
+      rotate_keys(env: { "AWS_ACCESS_KEY_ID" => "123" }, stdout: stdout)
+
+      expect(stdout.to_s).to include "AWS_ACCESS_KEY_ID"
+    end
+
+    it "does not display it when the env variables are not set" do
+      stdout = MyIO.new
+
+      rotate_keys(env: {}, stdout: stdout)
+
+      expect(stdout.to_s).to_not include "AWS_ACCESS_KEY_ID"
+    end
+  end
+end
+
+class MyIO
+  def initialize
+    @content = ""
+  end
+
+  def puts(msg)
+    @content << msg + "\n"
+  end
+
+  def to_s
+    @content
   end
 end

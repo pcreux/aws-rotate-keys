@@ -8,14 +8,16 @@ module AwsRotateKeys
   end
 
   class Runner
-    attr_reader :iam, :credentials_path, :stdout
+    attr_reader :iam, :credentials_path, :stdout, :env
 
     def initialize(iam: Aws::IAM::Client.new,
                    credentials_path: "~/.aws/credentials",
-                   stdout: $stdout)
+                   stdout: $stdout,
+                   env: ENV)
       @iam = iam
       @credentials_path = credentials_path
       @stdout = stdout
+      @env = env
     end
 
     def call
@@ -36,6 +38,10 @@ module AwsRotateKeys
       delete_oldest_access_key
 
       log "You're all set!"
+
+      if aws_environment_variables?
+        log aws_environment_variables_warning_message
+      end
     end
 
     private
@@ -84,6 +90,15 @@ module AwsRotateKeys
 
     def log(msg)
       stdout.puts msg
+    end
+
+    def aws_environment_variables?
+      env['AWS_ACCESS_KEY_ID'] || env['AWS_SECRET_ACCESS_KEY']
+    end
+
+    def aws_environment_variables_warning_message
+      "We've noticed that the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set.\n" +
+      "Please remove them so that aws cli and libraries use #{credentials_path} instead."
     end
   end
 end
