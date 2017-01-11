@@ -1,5 +1,9 @@
 sudo: false
 language: ruby
 rvm:
-  - 2.2.4
+- 2.2.4
 before_install: gem install bundler -v 1.13.3
+after_success: bundle exec codeclimate-test-reporter
+env:
+  matrix:
+    secure: iynBcsk1VJn12NzVqp35qKIR8J9Gymj8WKbfe2cat/EMVweIFRKRFoNZdEru7hFdJlVdibzvpNDyoWr8RwUdULjWo6CyT06K84uWXX2YLTDmoSR9lGCoNJL88kIZQvJOHkBas8ZHPVj1/bMQzR+uUBuyrYUtm2wijJhLY5w8jeGKCLoL97w8DeDjjRgL59GTV5vhzpaGkWGaTYoTLu6Oz3BWT1avlfJ0YfiJOlHfbzFVQMYQ7P+sPQmWn6h2Bg4xWRoNI36Nr6aMhpO8kKv6DwSNYjweAdf+DzIqPpxVFe5km3L07ybd/gcBzfVzpWUHmnP6Nlv3uACpt0keHCOT//OgwXrQx7eGw/Ijf2rbea/MMKw0nTk+xaWqrNtSIZrDaLtuzxXrNiAH5+p9ro4ZI7uVrtSnhWj+2/6qHf9wMtiCxmHB3W80tMDwmCzyNJTYidRJK4BRrUIUNrbKaiHGWIPMXGwrJxahI5rowUFQv2vYJiikET13BNcCwLQAAEOHvuWPSnaXYn0Ab1/UEWAkvu1pVNxESnpAHFou2Pg88RgLAzK2DEzJZ9wMC9IdFFs3oTrj2g0oYOyflASNlt48bv8pyFu31DL2BiCJUkRLg0i51QBPJWfbNbjv0F9JrcaVg/O0oQPG3eTl0A13jmHSz3M9f9duOPARSOhK+6rExYw=
