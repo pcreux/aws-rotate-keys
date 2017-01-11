@@ -11,7 +11,7 @@ module AwsRotateKeys
     attr_reader :iam, :credentials_path, :stdout, :env
 
     def initialize(iam: Aws::IAM::Client.new,
-                   credentials_path: "~/.aws/credentials",
+                   credentials_path: "#{Dir.home}/.aws/credentials",
                    stdout: $stdout,
                    env: ENV)
       @iam = iam
