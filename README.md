@@ -2,6 +2,16 @@
 
 A simple gem to rotate your aws access keys.
 
+[![Build
+Status](https://travis-ci.org/pcreux/aws-rotate-keys.svg?branch=master)](https://travis-ci.org/pcreux/aws-rotate-keys)
+
+[![Code
+Climate](https://codeclimate.com/github/pcreux/aws-rotate-keys/badges/gpa.svg)](https://codeclimate.com/github/pcreux/aws-rotate-keys)
+
+[![Test
+Coverage](https://codeclimate.com/github/pcreux/aws-rotate-keys/badges/coverage.svg)](https://codeclimate.com/github/pcreux/aws-rotate-keys/coverage)
+
+
 ## Installation
 
     $ gem install aws-rotate-keys
