@@ -1,28 +1,35 @@
-# Aws::Rotate::Keys
+# aws-rotate-keys
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/aws/rotate/keys`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+A simple gem to rotate your aws access keys.
 
 ## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'aws-rotate-keys'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
 
     $ gem install aws-rotate-keys
 
 ## Usage
 
-TODO: Write usage instructions here
+    $ aws-rotate-keys
+
+That will:
+
+1. connect to your aws account using `~/.aws/credentials` or environment variables
+2. create a new access key
+3. backup `~/.aws/credentials`
+4. write the new key to `~/.aws/credentials`
+5. delete your oldest access key from aws
+
+Sample output:
+
+```
+Creating access key...
+Writing new access key to ~/.aws/credentials
+Deleting your oldest access key...
+You're all set!
+We've noticed that the environment variables AWS_ACCESS_KEY_ID and
+AWS_SECRET_ACCESS_KEY are set.
+Please remove them so that aws cli and libraries use ~/.aws/credentials
+instead.
+```
 
 ## Development
 
@@ -32,10 +39,9 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/aws-rotate-keys. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/pcreux/aws-rotate-keys. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
