@@ -56,7 +56,7 @@ module AwsRotateKeys
     end
 
     def credentials_file_exists?
-      File.exists?(credentials_path)
+      File.exist?(credentials_path)
     end
 
     # ex. ~/aws/credentials.bkp-2017-01-06-16-38-07--0800
