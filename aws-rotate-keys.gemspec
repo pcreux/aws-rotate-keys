@@ -5,7 +5,7 @@ require 'version'
 
 Gem::Specification.new do |spec|
   spec.name          = "aws-rotate-keys"
-  spec.version       = Aws::Rotate::Keys::VERSION
+  spec.version       = AwsRotateKeys::VERSION
   spec.authors       = ["Philippe Creux"]
   spec.email         = ["pcreux@gmail.com"]
 
