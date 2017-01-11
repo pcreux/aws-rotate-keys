@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["pcreux@gmail.com"]
 
   spec.summary       = %q{Rotate your aws access keys}
-  spec.description   = %q{Rotate your aws access keys}
+  spec.description   = %q{A simple CLI tool to rotate your aws access keys}
   spec.homepage      = "https://github.com/pcreux/aws-rotate-keys"
   spec.license       = "MIT"
 
