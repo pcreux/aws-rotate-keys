@@ -35,7 +35,7 @@ describe AwsRotateKeys do
   let(:credentials_path) { "./spec/tmp/aws/credentials" }
 
   def rotate_keys(args = {})
-    AwsRotateKeys.call(
+    AwsRotateKeys::CLI.call(
       {
         iam: iam_double,
         credentials_path: credentials_path
