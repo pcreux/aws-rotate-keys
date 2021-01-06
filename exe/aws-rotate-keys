@@ -1,5 +1,32 @@
 #!/usr/bin/env ruby
 
 require "aws_rotate_keys"
+require "optparse"
 
-AwsRotateKeys::CLI.call
+# Use some basic parsing to allow command-line overrides of config
+class Parser
+  def self.parse(options)
+    output_options = {
+      delete_inactive: false
+    }
+
+    opt_parser = OptionParser.new do |opts|
+      opts.banner = "Usage: #{File.basename(__FILE__)} [options]"
+
+      opts.on("--delete-inactive", "If the key quota is full but one is inactive, delete that key to make room") do |p|
+        output_options[:delete_inactive] = p
+      end
+
+      opts.on("-h", "--help", "Prints this help") do
+        puts opts
+        exit
+      end
+    end
+
+    opt_parser.parse!(options)
+    output_options
+  end
+end
+
+cli_options = (Parser.parse ARGV)
+AwsRotateKeys::CLI.call(options: cli_options)

@@ -3,6 +3,8 @@ require "fileutils"
 
 module AwsRotateKeys
   class CLI
+    AWS_ENVIRONMENT_VARIABLES = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'].freeze
+
     def self.call(*args)
       new(*args).call
     end
@@ -12,35 +14,54 @@ module AwsRotateKeys
     def initialize(iam: Aws::IAM::Client.new,
                    credentials_path: "#{Dir.home}/.aws/credentials",
                    stdout: $stdout,
-                   env: ENV)
+                   env: ENV,
+                   options: {})
       @iam = iam
       @credentials_path = credentials_path
       @stdout = stdout
       @env = env
+      @options = options
     end
 
     def call
+      log "Reading key quota..."
+      quota = access_key_quota
+
+      log "Reading existing keys..."
+      access_keys = aws_access_keys
+
+      if quota <= access_keys.size
+        log "Key set is already at quota limit of #{quota}:"
+        log_keylist(access_keys)
+
+        inactive_keys = access_keys.select { |k| k["status"] == "Inactive" }
+        if @options[:delete_inactive] && !inactive_keys.empty?
+          log "Deleting oldest inactive access key as requested..."
+          log_keylist(inactive_keys)
+          delete_oldest_access_key(inactive_keys)
+        else
+          raise "You must manually delete a key or use one of the command-line overrides"
+        end
+      end
+
       log "Creating access key..."
       new_key = create_access_key
+      access_keys = aws_access_keys  # refresh key list
 
-      create_credentials_directory_if_needed
-
-      if credentials_file_exists?
+      if File.exist?(credentials_path)
         log "Backing up #{credentials_path} to #{credentials_backup_path}..."
-        backup_aws_credentials_file
+        FileUtils.cp(credentials_path, credentials_backup_path)
       end
 
       log "Writing new access key to #{credentials_path}"
       write_aws_credentials_file(new_key)
 
       log "Deleting your oldest access key..."
-      delete_oldest_access_key
+      delete_oldest_access_key(access_keys)
+
+      log aws_environment_variables_warning_message if aws_environment_variables?
 
       log "You're all set!"
-
-      if aws_environment_variables?
-        log aws_environment_variables_warning_message
-      end
     end
 
     private
@@ -50,24 +71,14 @@ module AwsRotateKeys
       create_access_key_response.access_key
     end
 
-    def create_credentials_directory_if_needed
-      FileUtils.mkdir_p(credentials_dir)
-    end
-
-    def credentials_file_exists?
-      File.exist?(credentials_path)
-    end
-
     # ex. ~/aws/credentials.bkp-2017-01-06-16-38-07--0800
     def credentials_backup_path
       credentials_path + ".bkp-#{Time.now.to_s.gsub(/[^\d]/, '-')}"
     end
 
-    def backup_aws_credentials_file
-      FileUtils.cp(credentials_path, credentials_backup_path)
-    end
-
     def write_aws_credentials_file(access_key)
+      FileUtils.mkdir_p(File.dirname(credentials_path)) # ensure credentials directory exists
+
       File.open(credentials_path, "w") do |f|
         f.puts "[default]"
         f.puts "aws_access_key_id = #{access_key.access_key_id}"
@@ -75,16 +86,24 @@ module AwsRotateKeys
       end
     end
 
-    def delete_oldest_access_key
-      list_access_keys_response = iam.list_access_keys
-      access_keys = list_access_keys_response.access_key_metadata
+    def access_key_quota
+      ret = @iam.get_account_summary.summary_map["AccessKeysPerUserQuota"]
+    end
 
-      oldest_access_key = access_keys.sort_by(&:create_date).first
+    def aws_access_keys
+      list_access_keys_response = iam.list_access_keys
+      list_access_keys_response.access_key_metadata
+    end
+
+    def delete_oldest_access_key(access_key_list)
+      oldest_access_key = access_key_list.min_by(&:create_date)
       iam.delete_access_key(access_key_id: oldest_access_key.access_key_id)
     end
 
-    def credentials_dir
-      File.dirname(credentials_path)
+    def log_keylist(access_keys)
+      access_keys.each do |k|
+        log "  #{k['create_date']}     #{k['access_key_id']}     #{k['status']}"
+      end
     end
 
     def log(msg)
@@ -92,11 +111,11 @@ module AwsRotateKeys
     end
 
     def aws_environment_variables?
-      env['AWS_ACCESS_KEY_ID'] || env['AWS_SECRET_ACCESS_KEY']
+      AWS_ENVIRONMENT_VARIABLES.any? { |v| env.key?(v) }
     end
 
     def aws_environment_variables_warning_message
-      "We've noticed that the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set.\n" +
+      "We've noticed that the environment variables #{AWS_ENVIRONMENT_VARIABLES} are set.\n" +
       "Please remove them so that aws cli and libraries use #{credentials_path} instead."
     end
   end
