@@ -14,11 +14,13 @@ module AwsRotateKeys
     def initialize(iam: Aws::IAM::Client.new,
                    credentials_path: "#{Dir.home}/.aws/credentials",
                    stdout: $stdout,
-                   env: ENV)
+                   env: ENV,
+                   options: {})
       @iam = iam
       @credentials_path = credentials_path
       @stdout = stdout
       @env = env
+      @options = options
     end
 
     def call
@@ -31,12 +33,20 @@ module AwsRotateKeys
       if quota <= access_keys.size
         log "Key set is already at quota limit of #{quota}:"
         log_keylist(access_keys)
-        raise "You must manually delete a key or use one of the command-line overrides"
+
+        inactive_keys = access_keys.select { |k| k["status"] == "Inactive" }
+        if @options[:delete_inactive] && !inactive_keys.empty?
+          log "Deleting oldest inactive access key as requested..."
+          log_keylist(inactive_keys)
+          delete_oldest_access_key(inactive_keys)
+        else
+          raise "You must manually delete a key or use one of the command-line overrides"
         end
       end
 
       log "Creating access key..."
       new_key = create_access_key
+      access_keys = aws_access_keys  # refresh key list
 
       if File.exist?(credentials_path)
         log "Backing up #{credentials_path} to #{credentials_backup_path}..."
