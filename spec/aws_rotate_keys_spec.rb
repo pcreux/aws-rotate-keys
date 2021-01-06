@@ -1,4 +1,5 @@
 require "spec_helper"
+require "myio"
 
 describe AwsRotateKeys do
   class IAMDouble
@@ -94,19 +95,5 @@ describe AwsRotateKeys do
 
       expect(stdout.to_s).to_not include "AWS_ACCESS_KEY_ID"
     end
-  end
-end
-
-class MyIO
-  def initialize
-    @content = ""
-  end
-
-  def puts(msg)
-    @content << msg + "\n"
-  end
-
-  def to_s
-    @content
   end
 end
