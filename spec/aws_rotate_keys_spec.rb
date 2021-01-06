@@ -2,12 +2,16 @@ require "spec_helper"
 require "myio"
 
 describe AwsRotateKeys do
+  OLD_KEY_ID = "OLDKEY".freeze
+  NEW_KEY_ID = "KEY123".freeze
+  NEW_SECRET = "SECRET123".freeze
+
   class IAMDouble
     def create_access_key
       Aws::IAM::Types::CreateAccessKeyResponse.new(
         access_key: Aws::IAM::Types::AccessKey.new(
-          access_key_id: "KEY123",
-          secret_access_key: "SECRET123"
+          access_key_id: NEW_KEY_ID,
+          secret_access_key: NEW_SECRET
         )
       )
     end
@@ -16,20 +20,18 @@ describe AwsRotateKeys do
       Aws::IAM::Types::ListAccessKeysResponse.new(
         access_key_metadata: [
           Aws::IAM::Types::AccessKeyMetadata.new(
-            access_key_id: "KEY123",
+            access_key_id: NEW_KEY_ID,
             create_date: Time.new(2017, 2, 1)
           ),
           Aws::IAM::Types::AccessKeyMetadata.new(
-            access_key_id: "OLDKEY",
+            access_key_id: OLD_KEY_ID,
             create_date: Time.new(2017, 1, 1)
           )
         ]
       )
     end
 
-    def delete_access_key(access_key_id:)
-      raise "Expected to delete access key 'OLDKEY' but was #{access_key_id}" unless access_key_id == "OLDKEY"
-    end
+    def delete_access_key(access_key_id:); end
   end
 
   let(:iam_double) { IAMDouble.new }
@@ -45,7 +47,7 @@ describe AwsRotateKeys do
   end
 
   before do
-    expect(iam_double).to receive(:delete_access_key).with(access_key_id: "OLDKEY")
+    expect(iam_double).to receive(:delete_access_key).with(access_key_id: OLD_KEY_ID)
   end
 
   context "when no credentials" do
@@ -58,7 +60,7 @@ describe AwsRotateKeys do
 
       credentials_content = File.read(credentials_path)
 
-      expect(credentials_content).to eq "[default]\naws_access_key_id = KEY123\naws_secret_access_key = SECRET123\n"
+      expect(credentials_content).to eq "[default]\naws_access_key_id = #{NEW_KEY_ID}\naws_secret_access_key = #{NEW_SECRET}\n"
     end
   end
 
