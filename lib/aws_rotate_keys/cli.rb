@@ -3,6 +3,8 @@ require "fileutils"
 
 module AwsRotateKeys
   class CLI
+    AWS_ENVIRONMENT_VARIABLES = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'].freeze
+
     def self.call(*args)
       new(*args).call
     end
@@ -23,11 +25,9 @@ module AwsRotateKeys
       log "Creating access key..."
       new_key = create_access_key
 
-      create_credentials_directory_if_needed
-
-      if credentials_file_exists?
+      if File.exist?(credentials_path)
         log "Backing up #{credentials_path} to #{credentials_backup_path}..."
-        backup_aws_credentials_file
+        FileUtils.cp(credentials_path, credentials_backup_path)
       end
 
       log "Writing new access key to #{credentials_path}"
@@ -36,11 +36,9 @@ module AwsRotateKeys
       log "Deleting your oldest access key..."
       delete_oldest_access_key
 
-      log "You're all set!"
+      log aws_environment_variables_warning_message if aws_environment_variables?
 
-      if aws_environment_variables?
-        log aws_environment_variables_warning_message
-      end
+      log "You're all set!"
     end
 
     private
@@ -50,24 +48,14 @@ module AwsRotateKeys
       create_access_key_response.access_key
     end
 
-    def create_credentials_directory_if_needed
-      FileUtils.mkdir_p(credentials_dir)
-    end
-
-    def credentials_file_exists?
-      File.exist?(credentials_path)
-    end
-
     # ex. ~/aws/credentials.bkp-2017-01-06-16-38-07--0800
     def credentials_backup_path
       credentials_path + ".bkp-#{Time.now.to_s.gsub(/[^\d]/, '-')}"
     end
 
-    def backup_aws_credentials_file
-      FileUtils.cp(credentials_path, credentials_backup_path)
-    end
-
     def write_aws_credentials_file(access_key)
+      FileUtils.mkdir_p(File.dirname(credentials_path)) # ensure credentials directory exists
+
       File.open(credentials_path, "w") do |f|
         f.puts "[default]"
         f.puts "aws_access_key_id = #{access_key.access_key_id}"
@@ -83,20 +71,16 @@ module AwsRotateKeys
       iam.delete_access_key(access_key_id: oldest_access_key.access_key_id)
     end
 
-    def credentials_dir
-      File.dirname(credentials_path)
-    end
-
     def log(msg)
       stdout.puts msg
     end
 
     def aws_environment_variables?
-      env['AWS_ACCESS_KEY_ID'] || env['AWS_SECRET_ACCESS_KEY']
+      AWS_ENVIRONMENT_VARIABLES.any? { |v| env.key?(v) }
     end
 
     def aws_environment_variables_warning_message
-      "We've noticed that the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set.\n" +
+      "We've noticed that the environment variables #{AWS_ENVIRONMENT_VARIABLES} are set.\n" +
       "Please remove them so that aws cli and libraries use #{credentials_path} instead."
     end
   end
