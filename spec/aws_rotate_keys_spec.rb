@@ -7,7 +7,21 @@ describe AwsRotateKeys do
   NEW_SECRET = "SECRET123".freeze
 
   class IAMDouble
+    def initialize
+      @keys = [
+        Aws::IAM::Types::AccessKeyMetadata.new(
+          access_key_id: OLD_KEY_ID,
+          create_date: Time.new(2017, 1, 1)
+        )
+      ]
+    end
+
     def create_access_key
+      @keys << Aws::IAM::Types::AccessKeyMetadata.new(
+        access_key_id: NEW_KEY_ID,
+        create_date: Time.new(2017, 2, 1)
+      )
+
       Aws::IAM::Types::CreateAccessKeyResponse.new(
         access_key: Aws::IAM::Types::AccessKey.new(
           access_key_id: NEW_KEY_ID,
@@ -18,16 +32,15 @@ describe AwsRotateKeys do
 
     def list_access_keys
       Aws::IAM::Types::ListAccessKeysResponse.new(
-        access_key_metadata: [
-          Aws::IAM::Types::AccessKeyMetadata.new(
-            access_key_id: NEW_KEY_ID,
-            create_date: Time.new(2017, 2, 1)
-          ),
-          Aws::IAM::Types::AccessKeyMetadata.new(
-            access_key_id: OLD_KEY_ID,
-            create_date: Time.new(2017, 1, 1)
-          )
-        ]
+        access_key_metadata: @keys
+      )
+    end
+
+    def get_account_summary
+      Aws::IAM::Types::GetAccountSummaryResponse.new(
+        summary_map: {
+          "AccessKeysPerUserQuota" => 2
+        }
       )
     end
 

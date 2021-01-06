@@ -22,6 +22,19 @@ module AwsRotateKeys
     end
 
     def call
+      log "Reading key quota..."
+      quota = access_key_quota
+
+      log "Reading existing keys..."
+      access_keys = aws_access_keys
+
+      if quota <= access_keys.size
+        log "Key set is already at quota limit of #{quota}:"
+        log_keylist(access_keys)
+        raise "You must manually delete a key or use one of the command-line overrides"
+        end
+      end
+
       log "Creating access key..."
       new_key = create_access_key
 
@@ -34,7 +47,7 @@ module AwsRotateKeys
       write_aws_credentials_file(new_key)
 
       log "Deleting your oldest access key..."
-      delete_oldest_access_key
+      delete_oldest_access_key(access_keys)
 
       log aws_environment_variables_warning_message if aws_environment_variables?
 
@@ -63,12 +76,24 @@ module AwsRotateKeys
       end
     end
 
-    def delete_oldest_access_key
-      list_access_keys_response = iam.list_access_keys
-      access_keys = list_access_keys_response.access_key_metadata
+    def access_key_quota
+      ret = @iam.get_account_summary.summary_map["AccessKeysPerUserQuota"]
+    end
 
-      oldest_access_key = access_keys.sort_by(&:create_date).first
+    def aws_access_keys
+      list_access_keys_response = iam.list_access_keys
+      list_access_keys_response.access_key_metadata
+    end
+
+    def delete_oldest_access_key(access_key_list)
+      oldest_access_key = access_key_list.min_by(&:create_date)
       iam.delete_access_key(access_key_id: oldest_access_key.access_key_id)
+    end
+
+    def log_keylist(access_keys)
+      access_keys.each do |k|
+        log "  #{k['create_date']}     #{k['access_key_id']}     #{k['status']}"
+      end
     end
 
     def log(msg)
